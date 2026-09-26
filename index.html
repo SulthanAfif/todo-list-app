@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>To-Do List</h1>
+            <button id="darkModeToggle" class="dark-mode-btn">🌙</button>
+        </header>
+
+        <form id="todoForm">
+            <input 
+                type="text" 
+                id="todoInput" 
+                placeholder="Tambah tugas baru..." 
+                autocomplete="off"
+            >
+            <button type="submit" id="addBtn">Tambah</button>
+        </form>
+
+        <div class="filters">
+            <button class="filter-btn active" data-filter="all">Semua</button>
+            <button class="filter-btn" data-filter="active">Belum Selesai</button>
+            <button class="filter-btn" data-filter="completed">Selesai</button>
+        </div>
+
+        <ul id="todoList"></ul>
+
+        <div class="footer">
+            <span id="taskCount">0 tugas tersisa</span>
+            <button id="clearCompleted">Hapus yang selesai</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

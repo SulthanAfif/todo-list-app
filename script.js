@@ -48,17 +48,20 @@ function renderTodos() {
     if (filteredTodos.length === 0) {
         todoList.innerHTML = `<li class="empty-message">Tidak ada tugas</li>`;
     } else {
-        filteredTodos.forEach((todo, index) => {
-            // Cari index asli di array todos
+        filteredTodos.forEach((todo) => {
             const realIndex = todos.indexOf(todo);
 
             const li = document.createElement("li");
             li.className = `todo-item ${todo.completed ? "completed" : ""}`;
+            li.dataset.index = realIndex;
 
             li.innerHTML = `
                 <input type="checkbox" ${todo.completed ? "checked" : ""} data-index="${realIndex}">
-                <span>${todo.text}</span>
-                <button class="delete-btn" data-index="${realIndex}">×</button>
+                <span class="todo-text">${todo.text}</span>
+                <div class="actions">
+                    <button class="edit-btn" data-index="${realIndex}" title="Edit">✎</button>
+                    <button class="delete-btn" data-index="${realIndex}" title="Hapus">×</button>
+                </div>
             `;
 
             todoList.appendChild(li);
@@ -92,22 +95,90 @@ todoForm.addEventListener("submit", (e) => {
     todoInput.focus();
 });
 
-// Centang / hapus tugas (event delegation)
+// Event delegation untuk checkbox, edit, dan hapus
 todoList.addEventListener("click", (e) => {
     const index = e.target.dataset.index;
 
+    // Centang selesai
     if (e.target.type === "checkbox") {
         todos[index].completed = e.target.checked;
         saveTodos();
         renderTodos();
+        return;
     }
 
+    // Hapus
     if (e.target.classList.contains("delete-btn")) {
         todos.splice(index, 1);
         saveTodos();
         renderTodos();
+        return;
+    }
+
+    // Mulai edit (tombol edit)
+    if (e.target.classList.contains("edit-btn")) {
+        startEdit(index);
+        return;
     }
 });
+
+// Double-click pada teks untuk edit
+todoList.addEventListener("dblclick", (e) => {
+    if (e.target.classList.contains("todo-text")) {
+        const li = e.target.closest(".todo-item");
+        const index = li.dataset.index;
+        startEdit(index);
+    }
+});
+
+// Fungsi mulai edit
+function startEdit(index) {
+    const li = document.querySelector(`.todo-item[data-index="${index}"]`);
+    if (!li || li.classList.contains("editing")) return;
+
+    const currentText = todos[index].text;
+    li.classList.add("editing");
+
+    li.innerHTML = `
+        <input type="checkbox" ${todos[index].completed ? "checked" : ""} disabled>
+        <input type="text" class="edit-input" value="${currentText}">
+        <div class="actions">
+            <button class="delete-btn" data-index="${index}">×</button>
+        </div>
+    `;
+
+    const editInput = li.querySelector(".edit-input");
+    editInput.focus();
+    editInput.setSelectionRange(editInput.value.length, editInput.value.length);
+
+    // Simpan saat tekan Enter
+    editInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            finishEdit(index, editInput.value);
+        }
+        if (e.key === "Escape") {
+            renderTodos(); // batal
+        }
+    });
+
+    // Simpan saat klik di luar
+    editInput.addEventListener("blur", () => {
+        finishEdit(index, editInput.value);
+    });
+}
+
+// Fungsi selesai edit
+function finishEdit(index, newText) {
+    newText = newText.trim();
+    if (newText === "") {
+        // Kalau kosong, hapus saja
+        todos.splice(index, 1);
+    } else {
+        todos[index].text = newText;
+    }
+    saveTodos();
+    renderTodos();
+}
 
 // Filter
 filterButtons.forEach(btn => {

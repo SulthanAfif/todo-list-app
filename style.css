@@ -251,4 +251,40 @@ body.dark-mode .dark-mode-btn:hover {
     #addBtn {
         width: 100%;
     }
+    /* ========== Edit Mode ========== */
+    .todo-item.editing {
+        background-color: rgba(102, 126, 234, 0.08);
+        border-radius: 8px;
+    }
+
+    .todo-item .edit-input {
+        flex: 1;
+        padding: 0.4rem 0.6rem;
+        border: 2px solid var(--primary);
+        border-radius: 6px;
+        font-size: 1rem;
+        background-color: var(--container-bg);
+        color: var(--text);
+        outline: none;
+    }
+
+    .edit-btn {
+        background: none;
+        border: none;
+        color: var(--primary);
+        font-size: 1rem;
+        cursor: pointer;
+        opacity: 0.7;
+        padding: 0.2rem 0.4rem;
+        transition: opacity 0.2s;
+    }
+
+    .edit-btn:hover {
+        opacity: 1;
+    }
+
+    .todo-item .actions {
+        display: flex;
+        gap: 0.3rem;
+    }
 }

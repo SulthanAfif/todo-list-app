@@ -19,8 +19,20 @@
                 id="todoInput" 
                 placeholder="Tambah tugas baru..." 
                 autocomplete="off"
+                required
             >
-            <button type="submit" id="addBtn">Tambah</button>
+
+            <div class="form-row">
+                <select id="prioritySelect">
+                    <option value="low">Rendah</option>
+                    <option value="medium" selected>Sedang</option>
+                    <option value="high">Tinggi</option>
+                </select>
+
+                <input type="date" id="dateInput">
+            </div>
+
+            <button type="submit" id="addBtn">Tambah Tugas</button>
         </form>
 
         <div class="filters">

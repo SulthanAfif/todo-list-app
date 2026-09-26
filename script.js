@@ -27,16 +27,19 @@ const todoList = document.getElementById("todoList");
 const taskCount = document.getElementById("taskCount");
 const clearCompletedBtn = document.getElementById("clearCompleted");
 const filterButtons = document.querySelectorAll(".filter-btn");
+const sortSelect = document.getElementById("sortSelect");
 
 let todos = JSON.parse(localStorage.getItem("todos")) || [];
 let currentFilter = "all";
+let currentSort = "default";
 
-// Label prioritas
 const priorityLabel = {
     high: "Tinggi",
     medium: "Sedang",
     low: "Rendah"
 };
+
+const priorityOrder = { high: 1, medium: 2, low: 3 };
 
 function saveTodos() {
     localStorage.setItem("todos", JSON.stringify(todos));
@@ -45,40 +48,75 @@ function saveTodos() {
 function formatDate(dateStr) {
     if (!dateStr) return "";
     const options = { day: "numeric", month: "short", year: "numeric" };
-    return new Date(dateStr).toLocaleDateString("id-ID", options);
+    return new Date(dateStr + "T00:00:00").toLocaleDateString("id-ID", options);
+}
+
+function isOverdue(dateStr) {
+    if (!dateStr) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const taskDate = new Date(dateStr + "T00:00:00");
+    return taskDate < today;
+}
+
+function getSortedTodos(list) {
+    const sorted = [...list];
+
+    if (currentSort === "priority") {
+        sorted.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    } else if (currentSort === "date") {
+        sorted.sort((a, b) => {
+            if (!a.date && !b.date) return 0;
+            if (!a.date) return 1;
+            if (!b.date) return -1;
+            return new Date(a.date) - new Date(b.date);
+        });
+    }
+    return sorted;
 }
 
 function renderTodos() {
     todoList.innerHTML = "";
 
     let filtered = todos;
+
     if (currentFilter === "active") {
         filtered = todos.filter(t => !t.completed);
     } else if (currentFilter === "completed") {
         filtered = todos.filter(t => t.completed);
     }
 
+    filtered = getSortedTodos(filtered);
+
     if (filtered.length === 0) {
-        todoList.innerHTML = `<li class="empty-message">Tidak ada tugas</li>`;
+        todoList.innerHTML = `
+            <li class="empty-message">
+                <div class="icon">📝</div>
+                <p>Belum ada tugas.<br>Yuk tambah yang baru!</p>
+            </li>
+        `;
         updateTaskCount();
         return;
     }
 
     filtered.forEach(todo => {
         const index = todos.indexOf(todo);
+        const overdue = !todo.completed && isOverdue(todo.date);
 
         const li = document.createElement("li");
-        li.className = `todo-item ${todo.completed ? "completed" : ""}`;
+        li.className = `todo-item ${todo.completed ? "completed" : ""} ${overdue ? "overdue" : ""}`;
         li.dataset.index = index;
 
-        const dateHtml = todo.date 
-            ? `<span class="todo-date">📅 ${formatDate(todo.date)}</span>` 
+        const dateHtml = todo.date
+            ? `<span class="todo-date ${overdue ? "overdue-text" : ""}">
+                    📅 ${formatDate(todo.date)}${overdue ? " · Terlewat" : ""}
+               </span>`
             : "";
 
         li.innerHTML = `
             <input type="checkbox" ${todo.completed ? "checked" : ""} data-index="${index}">
             <div class="todo-content">
-                <span class="todo-text">${todo.text}</span>
+                <span class="todo-text">${escapeHtml(todo.text)}</span>
                 <div class="todo-meta">
                     <span class="priority-badge ${todo.priority}">${priorityLabel[todo.priority]}</span>
                     ${dateHtml}
@@ -96,9 +134,17 @@ function renderTodos() {
     updateTaskCount();
 }
 
+function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function updateTaskCount() {
     const remaining = todos.filter(t => !t.completed).length;
-    taskCount.textContent = `${remaining} tugas tersisa`;
+    taskCount.textContent = remaining === 0 
+        ? "Semua selesai! 🎉" 
+        : `${remaining} tugas tersisa`;
 }
 
 // Tambah tugas
@@ -108,17 +154,17 @@ todoForm.addEventListener("submit", (e) => {
     const text = todoInput.value.trim();
     if (!text) return;
 
-    todos.push({
+    todos.unshift({
         text: text,
         completed: false,
         priority: prioritySelect.value,
-        date: dateInput.value || null
+        date: dateInput.value || null,
+        createdAt: Date.now()
     });
 
     saveTodos();
     renderTodos();
 
-    // Reset form
     todoInput.value = "";
     prioritySelect.value = "medium";
     dateInput.value = "";
@@ -138,22 +184,25 @@ todoList.addEventListener("click", (e) => {
     }
 
     if (e.target.classList.contains("delete-btn")) {
-        todos.splice(index, 1);
-        saveTodos();
-        renderTodos();
+        const confirmed = confirm(`Hapus tugas "${todos[index].text}"?`);
+        if (confirmed) {
+            todos.splice(index, 1);
+            saveTodos();
+            renderTodos();
+        }
         return;
     }
 
     if (e.target.classList.contains("edit-btn")) {
-        startEdit(index);
+        startEdit(Number(index));
     }
 });
 
-// Double click untuk edit
+// Double click edit
 todoList.addEventListener("dblclick", (e) => {
     if (e.target.classList.contains("todo-text")) {
         const li = e.target.closest(".todo-item");
-        startEdit(li.dataset.index);
+        startEdit(Number(li.dataset.index));
     }
 });
 
@@ -167,14 +216,14 @@ function startEdit(index) {
     li.innerHTML = `
         <input type="checkbox" ${todo.completed ? "checked" : ""} disabled>
         <div class="todo-content">
-            <input type="text" class="edit-input" value="${todo.text}">
-            <div class="todo-meta" style="margin-top: 0.5rem;">
-                <select class="edit-priority" style="padding: 0.3rem; border-radius: 6px; border: 1px solid var(--border);">
+            <input type="text" class="edit-input" value="${escapeHtml(todo.text)}">
+            <div class="edit-controls">
+                <select class="edit-priority">
                     <option value="low" ${todo.priority === "low" ? "selected" : ""}>Rendah</option>
                     <option value="medium" ${todo.priority === "medium" ? "selected" : ""}>Sedang</option>
                     <option value="high" ${todo.priority === "high" ? "selected" : ""}>Tinggi</option>
                 </select>
-                <input type="date" class="edit-date" value="${todo.date || ""}" style="padding: 0.3rem; border-radius: 6px; border: 1px solid var(--border);">
+                <input type="date" class="edit-date" value="${todo.date || ""}">
             </div>
         </div>
         <div class="actions">
@@ -203,19 +252,23 @@ function startEdit(index) {
     };
 
     editInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") saveEdit();
-        if (e.key === "Escape") renderTodos();
+        if (e.key === "Enter") {
+            e.preventDefault();
+            saveEdit();
+        }
+        if (e.key === "Escape") {
+            renderTodos();
+        }
     });
 
-    // Simpan saat klik di luar
-    setTimeout(() => {
-        document.addEventListener("click", function handler(e) {
-            if (!li.contains(e.target)) {
-                saveEdit();
-                document.removeEventListener("click", handler);
-            }
-        });
-    }, 0);
+    // Klik di luar untuk simpan
+    const handleClickOutside = (e) => {
+        if (!li.contains(e.target)) {
+            saveEdit();
+            document.removeEventListener("click", handleClickOutside);
+        }
+    };
+    setTimeout(() => document.addEventListener("click", handleClickOutside), 10);
 }
 
 // Filter
@@ -228,11 +281,23 @@ filterButtons.forEach(btn => {
     });
 });
 
+// Sort
+sortSelect.addEventListener("change", () => {
+    currentSort = sortSelect.value;
+    renderTodos();
+});
+
 // Hapus yang selesai
 clearCompletedBtn.addEventListener("click", () => {
-    todos = todos.filter(t => !t.completed);
-    saveTodos();
-    renderTodos();
+    const completedCount = todos.filter(t => t.completed).length;
+    if (completedCount === 0) return;
+
+    const confirmed = confirm(`Hapus ${completedCount} tugas yang sudah selesai?`);
+    if (confirmed) {
+        todos = todos.filter(t => !t.completed);
+        saveTodos();
+        renderTodos();
+    }
 });
 
 // Render awal

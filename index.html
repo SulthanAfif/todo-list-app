@@ -10,35 +10,43 @@
     <div class="container">
         <header>
             <h1>To-Do List</h1>
-            <button id="darkModeToggle" class="dark-mode-btn">🌙</button>
+            <button id="darkModeToggle" class="dark-mode-btn" title="Mode Gelap/Terang">🌙</button>
         </header>
 
         <form id="todoForm">
             <input 
                 type="text" 
                 id="todoInput" 
-                placeholder="Tambah tugas baru..." 
+                placeholder="Apa yang ingin kamu kerjakan?" 
                 autocomplete="off"
                 required
             >
 
             <div class="form-row">
-                <select id="prioritySelect">
-                    <option value="low">Rendah</option>
-                    <option value="medium" selected>Sedang</option>
-                    <option value="high">Tinggi</option>
+                <select id="prioritySelect" title="Prioritas">
+                    <option value="low">🟢 Rendah</option>
+                    <option value="medium" selected>🟡 Sedang</option>
+                    <option value="high">🔴 Tinggi</option>
                 </select>
 
-                <input type="date" id="dateInput">
+                <input type="date" id="dateInput" title="Tanggal (opsional)">
             </div>
 
-            <button type="submit" id="addBtn">Tambah Tugas</button>
+            <button type="submit" id="addBtn">+ Tambah Tugas</button>
         </form>
 
-        <div class="filters">
-            <button class="filter-btn active" data-filter="all">Semua</button>
-            <button class="filter-btn" data-filter="active">Belum Selesai</button>
-            <button class="filter-btn" data-filter="completed">Selesai</button>
+        <div class="toolbar">
+            <div class="filters">
+                <button class="filter-btn active" data-filter="all">Semua</button>
+                <button class="filter-btn" data-filter="active">Belum</button>
+                <button class="filter-btn" data-filter="completed">Selesai</button>
+            </div>
+
+            <select id="sortSelect" title="Urutkan">
+                <option value="default">Urutan Default</option>
+                <option value="priority">Prioritas</option>
+                <option value="date">Tanggal</option>
+            </select>
         </div>
 
         <ul id="todoList"></ul>
